@@ -24,19 +24,16 @@ const getPositionIcon = (pos: number) => {
 };
 
 const UserRow: React.FC<{ user: UserCounts; position: number }> = React.memo(({ user, position }) => {
-  const icon = getPositionIcon(position);
-  const isNumberIcon = icon.startsWith('#');
-
   return (
     <tr
       key={user.username}
       className="border-b border-gray-800 hover:bg-gradient-to-r hover:from-gray-900 hover:to-gray-800 transition-colors duration-300 transform hover:scale-[1.02] cursor-pointer"
     >
       <td className="py-4 px-6 text-gray-300 font-semibold text-lg text-center">
-        {isNumberIcon ? (
-          <span className="text-gray-500">{icon}</span>
+        {getPositionIcon(position).startsWith('#') ? (
+          <span className="text-gray-500">{getPositionIcon(position)}</span>
         ) : (
-          <span>{icon}</span>
+          <span>{getPositionIcon(position)}</span>
         )}
       </td>
       <td className="py-4 px-6">
