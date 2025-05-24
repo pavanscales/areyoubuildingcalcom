@@ -3,71 +3,78 @@ import React, { useState } from 'react';
 import UserRow from './UserRow';
 
 const Leaderboard = () => {
-  const [activeTab, setActiveTab] = useState('Daily');
+  const [activeTab, setActiveTab] = useState('Weekly');
 
-  const leaderboardData = [
+  const weeklyLeaderboardData = [
     {
       position: 1,
       username: '@dmztdhruv',
       avatar: 'https://ui-avatars.com/api/?name=dmztdhruv&background=374151&color=fff&size=32',
-      timeToday: '318m',
-      languages: ['TypeScript', 'Delphi', 'Go', 'Shell']
+      timeToday: '1688m',
+      languages: ['TypeScript', 'CSS', 'SVG', 'Less', 'JSON', 'Nix', 'Shell']
     },
     {
       position: 2,
-      username: '@rohitsxx',
-      avatar: 'https://ui-avatars.com/api/?name=rohitsxx&background=374151&color=fff&size=32',
-      timeToday: '306m',
-      languages: ['TypeScript', 'Svelte', 'Dart', 'CSS', 'HTML', 'C++', 'Python']
+      username: '@munali_xd',
+      avatar: 'https://ui-avatars.com/api/?name=munali_xd&background=374151&color=fff&size=32',
+      timeToday: '1136m',
+      languages: ['JavaScript', 'TypeScript', 'JSON', 'HTML', 'CSS', 'INI']
     },
     {
       position: 3,
-      username: '@munali_xd',
-      avatar: 'https://ui-avatars.com/api/?name=munali_xd&background=374151&color=fff&size=32',
-      timeToday: '214m',
-      languages: ['JavaScript']
+      username: '@rohitsxx',
+      avatar: 'https://ui-avatars.com/api/?name=rohitsxx&background=374151&color=fff&size=32',
+      timeToday: '1119m',
+      languages: ['Python', 'TypeScript', 'Shell', 'Lua', 'Markdown', 'JSON', 'Delphi']
     },
     {
       position: 4,
-      username: '@karaan_dev',
-      avatar: 'https://ui-avatars.com/api/?name=karaan_dev&background=374151&color=fff&size=32',
-      timeToday: '208m',
-      languages: ['TypeScript', 'CSS', 'Text', 'JSON', 'SVG']
+      username: '@tkirnit',
+      avatar: 'https://ui-avatars.com/api/?name=tkirnit&background=374151&color=fff&size=32',
+      timeToday: '1018m',
+      languages: ['TypeScript', 'JSON', 'Markdown', 'Smarty', 'CSS', 'Java Properties', 'JavaScript']
     },
     {
       position: 5,
-      username: '@rusheer_an',
-      avatar: 'https://ui-avatars.com/api/?name=rusheer_an&background=374151&color=fff&size=32',
-      timeToday: '171m',
-      languages: ['JavaScript', 'HTML', 'JSON']
+      username: '@ryro_bgs',
+      avatar: 'https://ui-avatars.com/api/?name=ryro_bgs&background=374151&color=fff&size=32',
+      timeToday: '996m',
+      languages: ['CSS', 'C++', 'Java', 'Python', 'Markdown', 'JSON', 'YAML']
     },
     {
       position: 6,
-      username: '@grrql_prttyash',
-      avatar: 'https://ui-avatars.com/api/?name=grrql_prttyash&background=374151&color=fff&size=32',
-      timeToday: '170m',
-      languages: ['TypeScript', 'CSS']
+      username: '@sina_savs',
+      avatar: 'https://ui-avatars.com/api/?name=sina_savs&background=374151&color=fff&size=32',
+      timeToday: '973m',
+      languages: ['TypeScript', 'Python', 'JSON', 'HTML', 'TOML', 'JavaScript', 'YAML']
     },
     {
       position: 7,
-      username: '@dviesh7',
-      avatar: 'https://ui-avatars.com/api/?name=dviesh7&background=374151&color=fff&size=32',
-      timeToday: '162m',
-      languages: ['TypeScript', 'CSS']
+      username: '@rohitsxx',
+      avatar: 'https://ui-avatars.com/api/?name=rohitsxx&background=374151&color=fff&size=32',
+      timeToday: '933m',
+      languages: ['TypeScript', 'Svelte', 'CSS', 'Delphi', 'Text', 'CSS', 'JSON']
     },
     {
       position: 8,
-      username: '@bibek7',
-      avatar: 'https://ui-avatars.com/api/?name=bibek7&background=374151&color=fff&size=32',
-      timeToday: '136m',
-      languages: ['TypeScript', 'JavaScript', 'CSS', 'Markdown']
+      username: '@tx_syk',
+      avatar: 'https://ui-avatars.com/api/?name=tx_syk&background=374151&color=fff&size=32',
+      timeToday: '913m',
+      languages: ['TypeScript', 'Lua', 'Nix', 'SVG', 'Shell', 'Text', 'R']
     },
     {
       position: 9,
-      username: '@jsus64',
-      avatar: 'https://ui-avatars.com/api/?name=jsus64&background=374151&color=fff&size=32',
-      timeToday: '134m',
-      languages: ['Svelte', 'TypeScript']
+      username: '@codearyan',
+      avatar: 'https://ui-avatars.com/api/?name=codearyan&background=374151&color=fff&size=32',
+      timeToday: '877m',
+      languages: ['TypeScript', 'JavaScript', 'Prisma', 'JSON', 'CSS', 'HTML']
+    },
+    {
+      position: 10,
+      username: '@shealondev',
+      avatar: 'https://ui-avatars.com/api/?name=shealondev&background=374151&color=fff&size=32',
+      timeToday: '677m',
+      languages: ['TypeScript', 'CSS', 'Prisma', 'HTML', 'JSON', 'Markdown', 'JavaScript']
     }
   ];
 
@@ -82,7 +89,7 @@ const Leaderboard = () => {
 
         <div className="bg-gray-900 rounded-lg overflow-hidden">
           <div className="flex items-center justify-between p-6 border-b border-gray-800">
-            <h2 className="text-white text-xl font-semibold">Today's Leaderboard</h2>
+            <h2 className="text-white text-xl font-semibold">Weekly Leaderboard</h2>
             <div className="flex space-x-1 bg-gray-800 rounded-lg p-1">
               <button
                 onClick={() => setActiveTab('Daily')}
@@ -118,7 +125,7 @@ const Leaderboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {leaderboardData.map((user) => (
+                {weeklyLeaderboardData.map((user) => (
                   <UserRow
                     key={user.position}
                     position={user.position}
