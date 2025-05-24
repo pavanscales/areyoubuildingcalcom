@@ -1,16 +1,24 @@
-
 import React from 'react';
-import LanguageBadge from './LanguageBadge';
 
-interface UserRowProps {
+interface GitHubUserRowProps {
   position: number;
-  username: string;
   avatar: string;
-  timeToday: string;
-  languages: string[];
+  username: string;
+  title: string;
+  date: string;
+  prs: number;      // Add PR count
+  commits: number;  // Add commit count
 }
 
-const UserRow: React.FC<UserRowProps> = ({ position, username, avatar, timeToday, languages }) => {
+const GitHubUserRow: React.FC<GitHubUserRowProps> = ({
+  position,
+  avatar,
+  username,
+  title,
+  date,
+  prs,
+  commits,
+}) => {
   const getPositionIcon = (pos: number) => {
     if (pos === 1) return '👑';
     if (pos === 2) return '🥈';
@@ -19,7 +27,7 @@ const UserRow: React.FC<UserRowProps> = ({ position, username, avatar, timeToday
   };
 
   return (
-    <tr className="border-b border-gray-800 hover:bg-gray-900/50 transition-colors">
+    <tr className="border-b border-gray-800 bg-black hover:bg-gray-900 transition-colors">
       <td className="py-4 px-4 text-gray-300 font-medium">
         <span className="flex items-center">
           {typeof getPositionIcon(position) === 'string' && getPositionIcon(position).startsWith('#') ? (
@@ -29,31 +37,27 @@ const UserRow: React.FC<UserRowProps> = ({ position, username, avatar, timeToday
           )}
         </span>
       </td>
+
       <td className="py-4 px-4">
         <div className="flex items-center space-x-3">
-          <img 
-            src={avatar} 
+          <img
+            src={avatar}
             alt={username}
-            className="w-8 h-8 rounded-full bg-gray-700"
+            className="w-8 h-8 rounded-full bg-black"
             onError={(e) => {
-              e.currentTarget.src = `https://ui-avatars.com/api/?name=${username}&background=374151&color=fff&size=32`;
+              e.currentTarget.src = `https://ui-avatars.com/api/?name=${username}&background=000000&color=fff&size=32`;
             }}
           />
-          <span className="text-white font-medium">{username}</span>
+          <span className="text-white font-medium">@{username}</span>
         </div>
       </td>
-      <td className="py-4 px-4 text-gray-300 font-medium">
-        {timeToday}
-      </td>
-      <td className="py-4 px-4">
-        <div className="flex flex-wrap gap-2">
-          {languages.map((lang, index) => (
-            <LanguageBadge key={index} language={lang} />
-          ))}
-        </div>
-      </td>
+
+
+      <td className="py-4 px-4 text-gray-400 text-sm">{new Date(date).toLocaleDateString()}</td>
+      <td className="py-4 px-4 text-gray-300 font-medium">{prs > 0 ? prs : '-'}</td>
+      <td className="py-4 px-4 text-gray-300 font-medium">{commits > 0 ? commits : '-'}</td>
     </tr>
   );
 };
 
-export default UserRow;
+export default GitHubUserRow;

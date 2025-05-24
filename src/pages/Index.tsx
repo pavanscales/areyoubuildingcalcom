@@ -1,82 +1,142 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  fetchCalcomPRs,
+  fetchCalcomIssues,
+  fetchCalcomCommits,
+} from '../utils/githubApi';
 
-import React, { useState } from 'react';
-import LanguageBadge from '../components/LanguageBadge';
+type UserCounts = {
+  username: string;
+  avatar: string;
+  prCount: number;
+  issueCount: number;
+  commitCount: number;
+  totalCount: number;
+};
 
-const Index = () => {
-  const [activeTab, setActiveTab] = useState('Weekly');
+type Period = 'daily' | 'weekly';
 
-  const weeklyLeaderboardData = [
-    {
-      position: 1,
-      username: '@dmztdhruv',
-      avatar: 'https://ui-avatars.com/api/?name=dmztdhruv&background=374151&color=fff&size=32',
-      timeToday: '1688m',
-      languages: ['TypeScript', 'CSS', 'SVG', 'Less', 'JSON', 'Nix', 'Shell']
-    },
-    {
-      position: 2,
-      username: '@munali_xd',
-      avatar: 'https://ui-avatars.com/api/?name=munali_xd&background=374151&color=fff&size=32',
-      timeToday: '1136m',
-      languages: ['JavaScript', 'TypeScript', 'JSON', 'HTML', 'CSS', 'INI']
-    },
-    {
-      position: 3,
-      username: '@rohitsxx',
-      avatar: 'https://ui-avatars.com/api/?name=rohitsxx&background=374151&color=fff&size=32',
-      timeToday: '1119m',
-      languages: ['Python', 'TypeScript', 'Shell', 'Lua', 'Markdown', 'JSON', 'Delphi']
-    },
-    {
-      position: 4,
-      username: '@tkirnit',
-      avatar: 'https://ui-avatars.com/api/?name=tkirnit&background=374151&color=fff&size=32',
-      timeToday: '1018m',
-      languages: ['TypeScript', 'JSON', 'Markdown', 'Smarty', 'CSS', 'Java Properties', 'JavaScript']
-    },
-    {
-      position: 5,
-      username: '@ryro_bgs',
-      avatar: 'https://ui-avatars.com/api/?name=ryro_bgs&background=374151&color=fff&size=32',
-      timeToday: '996m',
-      languages: ['CSS', 'C++', 'Java', 'Python', 'Markdown', 'JSON', 'YAML']
-    },
-    {
-      position: 6,
-      username: '@sina_savs',
-      avatar: 'https://ui-avatars.com/api/?name=sina_savs&background=374151&color=fff&size=32',
-      timeToday: '973m',
-      languages: ['TypeScript', 'Python', 'JSON', 'HTML', 'TOML', 'JavaScript', 'YAML']
-    },
-    {
-      position: 7,
-      username: '@rohitsxx',
-      avatar: 'https://ui-avatars.com/api/?name=rohitsxx&background=374151&color=fff&size=32',
-      timeToday: '933m',
-      languages: ['TypeScript', 'Svelte', 'CSS', 'Delphi', 'Text', 'CSS', 'JSON']
-    },
-    {
-      position: 8,
-      username: '@tx_syk',
-      avatar: 'https://ui-avatars.com/api/?name=tx_syk&background=374151&color=fff&size=32',
-      timeToday: '913m',
-      languages: ['TypeScript', 'Lua', 'Nix', 'SVG', 'Shell', 'Text', 'R']
-    },
-    {
-      position: 9,
-      username: '@codearyan',
-      avatar: 'https://ui-avatars.com/api/?name=codearyan&background=374151&color=fff&size=32',
-      timeToday: '877m',
-      languages: ['TypeScript', 'JavaScript', 'Prisma', 'JSON', 'CSS', 'HTML']
-    },
-    {
-      position: 10,
-      username: '@shealondev',
-      avatar: 'https://ui-avatars.com/api/?name=shealondev&background=374151&color=fff&size=32',
-      timeToday: '677m',
-      languages: ['TypeScript', 'CSS', 'Prisma', 'HTML', 'JSON', 'Markdown', 'JavaScript']
+const Index: React.FC = () => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [leaderboard, setLeaderboard] = useState<UserCounts[]>([]);
+  const [period, setPeriod] = useState<Period>('daily');
+
+  // Helper: Get nested date from object by dot path like "commit.author.date"
+  const getNestedDate = (obj: any, path: string): Date | null => {
+    const keys = path.split('.');
+    let val = obj;
+    for (const key of keys) {
+      if (!val) return null;
+      val = val[key];
     }
-  ];
+    return val ? new Date(val) : null;
+  };
+
+  // Returns date range [start, end) based on period
+  const getDateRange = useCallback((period: Period): [Date, Date] => {
+    const now = new Date();
+
+    if (period === 'daily') {
+      const start = new Date(now);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+      return [start, end];
+    }
+
+    if (period === 'weekly') {
+      const end = new Date(now);
+      end.setHours(23, 59, 59, 999);
+      const start = new Date(end);
+      start.setDate(start.getDate() - 6); // last 7 days including today
+      start.setHours(0, 0, 0, 0);
+      return [start, end];
+    }
+
+    // Fallback
+    return [new Date(0), now];
+  }, []);
+
+  // Filter items based on created_at or nested date key within the date range for current period
+  const filterByPeriod = useCallback(
+    (items: any[], dateKey: string): any[] => {
+      const [start, end] = getDateRange(period);
+
+      return items.filter((item) => {
+        const createdAt = getNestedDate(item, dateKey);
+        if (!createdAt) return false;
+        return createdAt >= start && createdAt < end;
+      });
+    },
+    [getDateRange, period]
+  );
+
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [prs, issues, commits] = await Promise.all([
+          fetchCalcomPRs(),
+          fetchCalcomIssues(),
+          fetchCalcomCommits(),
+        ]);
+
+        const filteredPRs = filterByPeriod(prs, 'created_at');
+        const filteredIssues = filterByPeriod(issues, 'created_at');
+        const filteredCommits = filterByPeriod(commits, 'commit.author.date');
+
+        const countsMap = new Map<string, UserCounts>();
+
+        const addCount = (
+          username: string,
+          avatar: string,
+          type: 'pr' | 'issue' | 'commit'
+        ) => {
+          if (!countsMap.has(username)) {
+            countsMap.set(username, {
+              username,
+              avatar,
+              prCount: 0,
+              issueCount: 0,
+              commitCount: 0,
+              totalCount: 0,
+            });
+          }
+          const user = countsMap.get(username)!;
+          if (type === 'pr') user.prCount++;
+          else if (type === 'issue') user.issueCount++;
+          else if (type === 'commit') user.commitCount++;
+          user.totalCount++;
+        };
+
+        filteredPRs.forEach((pr) => {
+          addCount(pr.user.login, pr.user.avatar_url, 'pr');
+        });
+
+        filteredIssues.forEach((issue) => {
+          addCount(issue.user.login, issue.user.avatar_url, 'issue');
+        });
+
+        filteredCommits.forEach((commit) => {
+          const username = commit.author?.login || commit.commit.author.name || 'Unknown';
+          const avatar = commit.author?.avatar_url || '';
+          addCount(username, avatar, 'commit');
+        });
+
+
+const sorted = Array.from(countsMap.values()).sort((a, b) => b.totalCount - a.totalCount);
+setLeaderboard(sorted);      } catch (err) {
+        setError('Failed to load leaderboard data');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, [filterByPeriod, period]);
 
   const getPositionIcon = (pos: number) => {
     if (pos === 1) return '👑';
@@ -86,120 +146,108 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      {/* Header */}
-      <header className="bg-black border-b border-gray-800 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="text-white font-medium">
-            areyoulocked.in
-          </div>
-          <div className="flex items-center space-x-4">
-            <button className="text-gray-300 hover:text-white transition-colors">
-              Sign in
-            </button>
-            <button className="text-gray-300 hover:text-white transition-colors">
-              🌙
-            </button>
-          </div>
+    <div className="min-h-screen bg-black text-gray-300 font-sans">
+      <header className="bg-black border-b border-gray-700 px-8 py-5 shadow-md">
+        <div className="flex items-center justify-between max-w-6xl mx-auto">
+          <div className="text-white font-semibold text-lg tracking-wide">buildingcalcom</div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-gray-300 text-2xl mb-8">
-            Are you as locked in as <span className="text-blue-400">@dmztdhruv</span> ?
-          </h1>
+      <main className="max-w-6xl mx-auto px-8 py-10">
+        <h1 className="text-center text-3xl text-white mb-10 font-semibold tracking-tight">
+          Are you as Building in as{' '}
+          <span className="text-blue-500">
+            @{leaderboard.length > 0 ? leaderboard[0].username : 'dmztdhruv'}
+          </span>
+          ?
+        </h1>
+
+        {/* Period Tabs */}
+        <div className="flex justify-center space-x-6 mb-6">
+          {(['daily', 'weekly'] as Period[]).map((p) => (
+            <button
+              key={p}
+              className={`px-4 py-2 rounded-lg font-semibold ${
+                period === p
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+              onClick={() => setPeriod(p)}
+              aria-pressed={period === p}
+            >
+              {p.charAt(0).toUpperCase() + p.slice(1)}
+            </button>
+          ))}
         </div>
 
-        <div className="bg-gray-900 rounded-lg overflow-hidden">
-          <div className="flex items-center justify-between p-6 border-b border-gray-800">
-            <h2 className="text-white text-xl font-semibold">Weekly Leaderboard</h2>
-            <div className="flex space-x-1 bg-gray-800 rounded-lg p-1">
-              <button
-                onClick={() => setActiveTab('Daily')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === 'Daily'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:text-white'
-                }`}
-              >
-                Daily
-              </button>
-              <button
-                onClick={() => setActiveTab('Weekly')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === 'Weekly'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:text-white'
-                }`}
-              >
-                Weekly
-              </button>
-            </div>
-          </div>
-
+        <section className="bg-black rounded-xl shadow-lg overflow-hidden border border-gray-800">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-800">
-                  <th className="text-left py-4 px-4 text-gray-400 font-medium">Position</th>
-                  <th className="text-left py-4 px-4 text-gray-400 font-medium">User</th>
-                  <th className="text-left py-4 px-4 text-gray-400 font-medium">Time Today</th>
-                  <th className="text-left py-4 px-4 text-gray-400 font-medium">Languages</th>
-                </tr>
-              </thead>
-              <tbody>
-                {weeklyLeaderboardData.map((user) => (
-                  <tr key={user.position} className="border-b border-gray-800 hover:bg-gray-900/50 transition-colors">
-                    <td className="py-4 px-4 text-gray-300 font-medium">
-                      <span className="flex items-center">
-                        {typeof getPositionIcon(user.position) === 'string' && getPositionIcon(user.position).startsWith('#') ? (
-                          <span className="text-gray-400">{getPositionIcon(user.position)}</span>
-                        ) : (
-                          <span className="text-xl">{getPositionIcon(user.position)}</span>
-                        )}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center space-x-3">
-                        <img 
-                          src={user.avatar} 
-                          alt={user.username}
-                          className="w-8 h-8 rounded-full bg-gray-700"
-                          onError={(e) => {
-                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${user.username}&background=374151&color=fff&size=32`;
-                          }}
-                        />
-                        <span className="text-white font-medium">{user.username}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-gray-300 font-medium">
-                      {user.timeToday}
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex flex-wrap gap-2">
-                        {user.languages.map((lang, index) => (
-                          <LanguageBadge key={index} language={lang} />
-                        ))}
-                      </div>
-                    </td>
+            {loading ? (
+              <div className="text-center py-10 text-gray-400 font-medium">Loading...</div>
+            ) : error ? (
+              <div className="text-center py-10 text-red-500 font-medium">{error}</div>
+            ) : (
+              <table className="w-full table-fixed border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left py-4 px-6 text-gray-500 font-semibold tracking-wide">Position</th>
+                    <th className="text-left py-4 px-6 text-gray-500 font-semibold tracking-wide">User</th>
+                    <th className="text-center py-4 px-6 text-gray-500 font-semibold tracking-wide">PR Count</th>
+                    <th className="text-center py-4 px-6 text-gray-500 font-semibold tracking-wide">Issue Count</th>
+                    <th className="text-center py-4 px-6 text-gray-500 font-semibold tracking-wide">Commit Count</th>
+                    <th className="text-center py-4 px-6 text-gray-500 font-semibold tracking-wide">Total Count</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {leaderboard.map((user, index) => (
+                    <tr
+                      key={user.username}
+                      className="border-b border-gray-800 hover:bg-gray-900 transition-colors duration-200"
+                    >
+                      <td className="py-4 px-6 text-gray-300 font-semibold text-lg text-center">
+                        {getPositionIcon(index + 1).startsWith('#') ? (
+                          <span className="text-gray-500">{getPositionIcon(index + 1)}</span>
+                        ) : (
+                          <span>{getPositionIcon(index + 1)}</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center space-x-4">
+                          <img
+                            src={
+                              user.avatar ||
+                              `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                user.username
+                              )}&background=000000&color=fff&size=32`
+                            }
+                            alt={user.username}
+                            className="w-9 h-9 rounded-full bg-gray-900 object-cover"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null; // Prevent infinite loop
+                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                user.username
+                              )}&background=000000&color=fff&size=32`;
+                            }}
+                          />
+                          <span className="text-white font-semibold tracking-tight text-sm">
+                            {user.username}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-center">{user.prCount}</td>
+                      <td className="py-4 px-6 text-center">{user.issueCount}</td>
+                      <td className="py-4 px-6 text-center">{user.commitCount}</td>
+                      <td className="py-4 px-6 text-center font-semibold text-white">
+                        {user.totalCount}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-        </div>
-
-        <div className="mt-6 text-center">
-          <p className="text-gray-500 text-sm">
-            📂 README.md
-          </p>
-          <p className="text-blue-400 text-sm mt-2">
-            areyoulocked.in © 2025
-          </p>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 };
