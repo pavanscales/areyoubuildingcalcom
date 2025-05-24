@@ -211,7 +211,7 @@ const Index: React.FC = () => {
             className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 font-bold text-2xl tracking-widest select-none"
             style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}
           >
-            BuildingCalcom
+          Areyoubuildingcalcom
           </div>
         </div>
       </header>
