@@ -186,7 +186,7 @@ const Index: React.FC = () => {
       <main className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-10">
         <h1 className="text-center text-2xl sm:text-3xl text-white mb-8 sm:mb-10 font-semibold tracking-tight">
           Are you as Building in as{' '}
-          <span className="text-blue-500">@{topUser.slice(0,6)}</span>?
+          <span className="text-blue-500">@{topUser.slice(0,8)}</span>?
         </h1>
 
         <div className="flex flex-wrap justify-center gap-4 mb-6">
