@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   fetchCalcomPRs,
@@ -16,37 +17,32 @@ type UserCounts = {
 
 type Period = 'daily' | 'weekly';
 
-const getPositionIcon = (pos: number) => {
-  if (pos === 1) return '👑';
-  if (pos === 2) return '🥈';
-  if (pos === 3) return '🥉';
-  return `#${pos}`;
-};
+const getPositionIcon = (pos: number): string =>
+  ['👑', '🥈', '🥉'][pos - 1] ?? `#${pos}`;
+
+const getDefaultAvatar = (username: string) =>
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=000000&color=fff&size=32`;
 
 const UserRow: React.FC<{ user: UserCounts; position: number }> = React.memo(({ user, position }) => {
+  const icon = getPositionIcon(position);
   return (
     <tr className="border-b border-gray-800 hover:bg-gradient-to-r hover:from-gray-900 hover:to-gray-800 transition duration-300 transform hover:scale-[1.01] cursor-pointer">
       <td className="py-3 px-2 sm:px-4 text-center text-sm sm:text-base">
-        {getPositionIcon(position).startsWith('#') ? (
-          <span className="text-gray-500">{getPositionIcon(position)}</span>
+        {icon.startsWith('#') ? (
+          <span className="text-gray-500">{icon}</span>
         ) : (
-          <span>{getPositionIcon(position)}</span>
+          <span>{icon}</span>
         )}
       </td>
       <td className="py-3 px-2 sm:px-4">
         <div className="flex items-center gap-3 max-w-[150px] sm:max-w-none">
           <img
-            src={
-              user.avatar ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=000000&color=fff&size=32`
-            }
+            src={user.avatar || getDefaultAvatar(user.username)}
             alt={user.username}
             className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-900 object-cover"
             onError={(e) => {
               e.currentTarget.onerror = null;
-              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                user.username
-              )}&background=000000&color=fff&size=32`;
+              e.currentTarget.src = getDefaultAvatar(user.username);
             }}
           />
           <span className="text-white font-semibold text-sm truncate">{user.username}</span>
@@ -67,13 +63,7 @@ const Index: React.FC = () => {
   const [period, setPeriod] = useState<Period>('daily');
 
   const getNestedDate = useCallback((obj: any, path: string): Date | null => {
-    const keys = path.split('.');
-    let val = obj;
-    for (const key of keys) {
-      if (!val) return null;
-      val = val[key];
-    }
-    return val ? new Date(val) : null;
+    return path.split('.').reduce((val, key) => (val ? val[key] : null), obj) ? new Date(path.split('.').reduce((val, key) => (val ? val[key] : null), obj)) : null;
   }, []);
 
   const getDateRange = useCallback((period: Period): [Date, Date] => {
@@ -89,7 +79,7 @@ const Index: React.FC = () => {
       const end = new Date(now);
       end.setHours(23, 59, 59, 999);
       const start = new Date(end);
-      start.setDate(start.getDate() - 6);
+      start.setDate(end.getDate() - 6);
       start.setHours(0, 0, 0, 0);
       return [start, end];
     }
@@ -101,8 +91,7 @@ const Index: React.FC = () => {
       const [start, end] = getDateRange(period);
       return items.filter((item) => {
         const createdAt = getNestedDate(item, dateKey);
-        if (!createdAt) return false;
-        return createdAt >= start && createdAt < end;
+        return createdAt && createdAt >= start && createdAt < end;
       });
     },
     [getDateRange, getNestedDate, period]
@@ -110,7 +99,8 @@ const Index: React.FC = () => {
 
   useEffect(() => {
     let canceled = false;
-    async function loadData() {
+
+    (async () => {
       setLoading(true);
       setError(null);
       try {
@@ -154,7 +144,7 @@ const Index: React.FC = () => {
           addCount(username, avatar, 'commit');
         });
 
-        const sorted = Array.from(countsMap.values()).sort((a, b) => b.totalCount - a.totalCount);
+        const sorted = [...countsMap.values()].sort((a, b) => b.totalCount - a.totalCount);
         setLeaderboard(sorted);
       } catch (err) {
         if (!canceled) {
@@ -164,41 +154,38 @@ const Index: React.FC = () => {
       } finally {
         if (!canceled) setLoading(false);
       }
-    }
-    loadData();
+    })();
+
     return () => {
       canceled = true;
     };
-  }, [filterByPeriod, period]);
+  }, [filterByPeriod]);
 
-  const topUser = useMemo(() => leaderboard[0]?.username || 'dmztdhruv', [leaderboard]);
+  const topUser = useMemo(() => leaderboard[0]?.username || 'pavanscales', [leaderboard]);
 
   return (
     <div className="min-h-screen bg-black text-gray-300 font-sans">
       <header className="bg-black border-b border-gray-700 px-4 sm:px-8 py-5 shadow-md">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
-          <div className="text-white font-mono text-base sm:text-lg">
-            areyoubuildingcalcom
-          </div>
+          <div className="text-white font-mono text-base sm:text-lg">areyoubuildingcalcom</div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-10">
         <h1 className="text-center text-2xl sm:text-3xl text-white mb-8 sm:mb-10 font-semibold tracking-tight">
-          Are you as Building in as{' '}
-          <span className="text-blue-500">@{topUser.slice(0,8)}</span>?
+          Are you as Building in as <span className="text-blue-500">@{topUser.slice(0, 8)}</span>?
         </h1>
 
         <div className="flex flex-wrap justify-center gap-4 mb-6">
           {(['daily', 'weekly'] as Period[]).map((p) => (
             <button
               key={p}
+              onClick={() => setPeriod(p)}
               className={`px-4 py-2 rounded-md font-semibold transition duration-300 text-sm ${
                 period === p
                   ? 'bg-blue-600 text-white shadow-md'
                   : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
               }`}
-              onClick={() => setPeriod(p)}
             >
               {p.charAt(0).toUpperCase() + p.slice(1)}
             </button>
