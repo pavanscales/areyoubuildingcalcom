@@ -25,28 +25,23 @@ const getPositionIcon = (pos: number) => {
 
 const UserRow: React.FC<{ user: UserCounts; position: number }> = React.memo(({ user, position }) => {
   return (
-    <tr
-      key={user.username}
-      className="border-b border-gray-800 hover:bg-gradient-to-r hover:from-gray-900 hover:to-gray-800 transition-colors duration-300 transform hover:scale-[1.02] cursor-pointer"
-    >
-      <td className="py-4 px-6 text-gray-300 font-semibold text-lg text-center">
+    <tr className="border-b border-gray-800 hover:bg-gradient-to-r hover:from-gray-900 hover:to-gray-800 transition duration-300 transform hover:scale-[1.01] cursor-pointer">
+      <td className="py-3 px-2 sm:px-4 text-center text-sm sm:text-base">
         {getPositionIcon(position).startsWith('#') ? (
           <span className="text-gray-500">{getPositionIcon(position)}</span>
         ) : (
           <span>{getPositionIcon(position)}</span>
         )}
       </td>
-      <td className="py-4 px-6">
-        <div className="flex items-center space-x-4">
+      <td className="py-3 px-2 sm:px-4">
+        <div className="flex items-center gap-3 max-w-[150px] sm:max-w-none">
           <img
             src={
               user.avatar ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                user.username
-              )}&background=000000&color=fff&size=32`
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=000000&color=fff&size=32`
             }
             alt={user.username}
-            className="w-9 h-9 rounded-full bg-gray-900 object-cover"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-900 object-cover"
             onError={(e) => {
               e.currentTarget.onerror = null;
               e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -54,17 +49,13 @@ const UserRow: React.FC<{ user: UserCounts; position: number }> = React.memo(({ 
               )}&background=000000&color=fff&size=32`;
             }}
           />
-          <span className="text-white font-semibold tracking-tight text-sm">
-            {user.username}
-          </span>
+          <span className="text-white font-semibold text-sm truncate">{user.username}</span>
         </div>
       </td>
-      <td className="py-4 px-6 text-center">{user.prCount}</td>
-      <td className="py-4 px-6 text-center">{user.issueCount}</td>
-      <td className="py-4 px-6 text-center">{user.commitCount}</td>
-      <td className="py-4 px-6 text-center font-semibold text-white">
-        {user.totalCount}
-      </td>
+      <td className="py-3 px-2 sm:px-4 text-center text-sm">{user.prCount}</td>
+      <td className="py-3 px-2 sm:px-4 text-center text-sm">{user.issueCount}</td>
+      <td className="py-3 px-2 sm:px-4 text-center text-sm">{user.commitCount}</td>
+      <td className="py-3 px-2 sm:px-4 text-center font-semibold text-white text-sm">{user.totalCount}</td>
     </tr>
   );
 });
@@ -87,7 +78,6 @@ const Index: React.FC = () => {
 
   const getDateRange = useCallback((period: Period): [Date, Date] => {
     const now = new Date();
-
     if (period === 'daily') {
       const start = new Date(now);
       start.setHours(0, 0, 0, 0);
@@ -95,23 +85,20 @@ const Index: React.FC = () => {
       end.setDate(end.getDate() + 1);
       return [start, end];
     }
-
     if (period === 'weekly') {
       const end = new Date(now);
       end.setHours(23, 59, 59, 999);
       const start = new Date(end);
-      start.setDate(start.getDate() - 6); // last 7 days including today
+      start.setDate(start.getDate() - 6);
       start.setHours(0, 0, 0, 0);
       return [start, end];
     }
-
     return [new Date(0), now];
   }, []);
 
   const filterByPeriod = useCallback(
     (items: any[], dateKey: string): any[] => {
       const [start, end] = getDateRange(period);
-
       return items.filter((item) => {
         const createdAt = getNestedDate(item, dateKey);
         if (!createdAt) return false;
@@ -123,7 +110,6 @@ const Index: React.FC = () => {
 
   useEffect(() => {
     let canceled = false;
-
     async function loadData() {
       setLoading(true);
       setError(null);
@@ -142,11 +128,7 @@ const Index: React.FC = () => {
 
         const countsMap = new Map<string, UserCounts>();
 
-        const addCount = (
-          username: string,
-          avatar: string,
-          type: 'pr' | 'issue' | 'commit'
-        ) => {
+        const addCount = (username: string, avatar: string, type: 'pr' | 'issue' | 'commit') => {
           if (!countsMap.has(username)) {
             countsMap.set(username, {
               username,
@@ -164,14 +146,8 @@ const Index: React.FC = () => {
           user.totalCount++;
         };
 
-        filteredPRs.forEach((pr) => {
-          addCount(pr.user.login, pr.user.avatar_url, 'pr');
-        });
-
-        filteredIssues.forEach((issue) => {
-          addCount(issue.user.login, issue.user.avatar_url, 'issue');
-        });
-
+        filteredPRs.forEach((pr) => addCount(pr.user.login, pr.user.avatar_url, 'pr'));
+        filteredIssues.forEach((issue) => addCount(issue.user.login, issue.user.avatar_url, 'issue'));
         filteredCommits.forEach((commit) => {
           const username = commit.author?.login || commit.commit.author.name || 'Unknown';
           const avatar = commit.author?.avatar_url || '';
@@ -179,7 +155,6 @@ const Index: React.FC = () => {
         });
 
         const sorted = Array.from(countsMap.values()).sort((a, b) => b.totalCount - a.totalCount);
-
         setLeaderboard(sorted);
       } catch (err) {
         if (!canceled) {
@@ -190,9 +165,7 @@ const Index: React.FC = () => {
         if (!canceled) setLoading(false);
       }
     }
-
     loadData();
-
     return () => {
       canceled = true;
     };
@@ -202,34 +175,30 @@ const Index: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-gray-300 font-sans">
-      <header className="bg-black border-b border-gray-700 px-8 py-5 shadow-md">
+      <header className="bg-black border-b border-gray-700 px-4 sm:px-8 py-5 shadow-md">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
-          <div
-            className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 font-bold text-2xl tracking-widest select-none"
-            style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}
-          >
-            BuildingCalcom
+          <div className="text-white font-mono text-base sm:text-lg">
+            areyoubuildingcalcom
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-8 py-10">
-        <h1 className="text-center text-3xl text-white mb-10 font-semibold tracking-tight">
+      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-10">
+        <h1 className="text-center text-2xl sm:text-3xl text-white mb-8 sm:mb-10 font-semibold tracking-tight">
           Are you as Building in as{' '}
           <span className="text-blue-500">@{topUser}</span>?
         </h1>
 
-        <div className="flex justify-center space-x-6 mb-6">
+        <div className="flex flex-wrap justify-center gap-4 mb-6">
           {(['daily', 'weekly'] as Period[]).map((p) => (
             <button
               key={p}
-              className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-300 ${
+              className={`px-4 py-2 rounded-md font-semibold transition duration-300 text-sm ${
                 period === p
-                  ? 'bg-blue-600 text-white shadow-lg'
+                  ? 'bg-blue-600 text-white shadow-md'
                   : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
               }`}
               onClick={() => setPeriod(p)}
-              aria-pressed={period === p}
             >
               {p.charAt(0).toUpperCase() + p.slice(1)}
             </button>
@@ -243,15 +212,15 @@ const Index: React.FC = () => {
             ) : error ? (
               <div className="text-center py-10 text-red-500 font-medium">{error}</div>
             ) : (
-              <table className="w-full table-fixed border-collapse">
+              <table className="w-full table-auto min-w-[640px] text-sm">
                 <thead>
                   <tr className="border-b border-gray-700">
-                    <th className="text-left py-4 px-6 text-gray-500 font-semibold tracking-wide">Position</th>
-                    <th className="text-left py-4 px-6 text-gray-500 font-semibold tracking-wide">User</th>
-                    <th className="text-center py-4 px-6 text-gray-500 font-semibold tracking-wide">PR Count</th>
-                    <th className="text-center py-4 px-6 text-gray-500 font-semibold tracking-wide">Issue Count</th>
-                    <th className="text-center py-4 px-6 text-gray-500 font-semibold tracking-wide">Commit Count</th>
-                    <th className="text-center py-4 px-6 text-gray-500 font-semibold tracking-wide">Total Count</th>
+                    <th className="text-left py-3 px-2 sm:px-4 text-gray-500 font-semibold">Position</th>
+                    <th className="text-left py-3 px-2 sm:px-4 text-gray-500 font-semibold">User</th>
+                    <th className="text-center py-3 px-2 sm:px-4 text-gray-500 font-semibold">PRs</th>
+                    <th className="text-center py-3 px-2 sm:px-4 text-gray-500 font-semibold">Issues</th>
+                    <th className="text-center py-3 px-2 sm:px-4 text-gray-500 font-semibold">Commits</th>
+                    <th className="text-center py-3 px-2 sm:px-4 text-gray-500 font-semibold">Total</th>
                   </tr>
                 </thead>
                 <tbody>
